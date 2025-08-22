@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SSD Movies – Latest Movies & Web Series</title>
+<link rel="icon" href="favicon.ico"/>
+<style>
+  body {margin:0;font-family:Arial,sans-serif;background:#0b1020;color:#e6ecf1;}
+  
+  /* Header */
+  header {
+    background:#121833;
+    padding:10px 20px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:0 2px 6px rgba(0,0,0,0.5);
+    position:sticky;
+    top:0;
+    z-index:1000;
+  }
+  header h1 {
+    color:#5eead4;
+    display:flex;
+    align-items:center;
+    margin:0 0 5px 0;
+    font-size:24px;
+  }
+  header h1 img {height:40px;margin-right:10px;}
+  header .links {display:flex;gap:10px;}
+  header .links a {
+    padding:8px 12px;
+    background:#22d3ee;
+    color:#06121a;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:bold;
+    white-space:nowrap;
+  }
+
+  /* Search */
+  .search-bar {text-align:center;padding:10px;background:#0b1020;position:sticky;top:60px;z-index:1000;}
+  .search-bar input {
+    width:90%;
+    max-width:400px;
+    padding:8px 12px;
+    border-radius:8px;
+    border:none;
+    font-size:16px;
+  }
+
+  /* Filters */
+  .filters {
+    padding:10px;
+    text-align:center;
+    position:sticky;
+    top:110px;
+    background:#0b1020;
+    z-index:1000;
+    box-shadow:0 2px 6px rgba(0,0,0,0.5);
+  }
+  .filters button {
+    margin:5px;
+    padding:8px 16px;
+    background:#5eead4;
+    color:#06121a;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    transition:0.3s;
+  }
+  .filters button.active, .filters button:hover {background:#22d3ee;color:#fff;}
+
+  /* Movie Grid */
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:15px;
+    padding:20px;
+  }
+  .card {
+    background:#121833;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 4px 12px rgba(0,0,0,.6);
+    transition:transform 0.3s, box-shadow 0.3s;
+  }
+  .card:hover {transform:scale(1.05);box-shadow:0 8px 20px rgba(0,0,0,.8);}
+  .card img {width:100%;height:auto;display:block;}
+  .card .info {padding:10px;text-align:center;}
+  .card .info h3{margin:5px 0;color:#5eead4;font-size:16px;}
+  .card .info p{margin:3px 0;color:#fff;font-size:14px;}
+  .card .info a{display:inline-block;margin-top:5px;padding:6px 10px;background:#22d3ee;color:#06121a;text-decoration:none;border-radius:6px;font-size:13px;}
+
+  /* Load More Button */
+  #loadMore {
+    display:block;
+    margin:20px auto;
+    padding:10px 20px;
+    background:#5eead4;
+    color:#06121a;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:16px;
+  }
+  #loadMore:hover {background:#22d3ee;color:#fff;}
+
+  /* Footer */
+  footer {
+    padding:20px;
+    text-align:center;
+    color:#9aa6b2;
+    background:#0f1530;
+  }
+  footer a {
+    color:#22d3ee;
+    text-decoration:none;
+    margin:0 5px;
+    font-weight:bold;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><img src="https://i.postimg.cc/cHfTHkV5/Screenshot-2023-1030-074825-modified.png" alt="SSD Logo"/>SSD Movies</h1>
+  <div class="links">
+    <a href="https://t.me/ssd_movies" target="_blank">Telegram</a>
+    <a href="https://instagram.com/ssd_movies" target="_blank">Instagram</a>
+  </div>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search movies or web series..."/>
+</div>
+
+<section class="filters">
+  <button class="active" data-filter="now_playing">New Releases</button>
+  <button data-filter="upcoming">Upcoming</button>
+  <button data-filter="top_rated">Top Rated</button>
+  <button data-filter="popular">Popular</button>
+  <button data-filter="action">Action</button>
+  <button data-filter="comedy">Comedy</button>
+  <button data-filter="romance">Romance</button>
+  <button data-filter="bollywood">Bollywood</button>
+  <button data-filter="hollywood">Hollywood</button>
+  <button data-filter="south">South</button>
+  <button data-filter="webseries">Web Series</button>
+</section>
+
+<section class="grid" id="movieGrid"></section>
+<button id="loadMore">Load More</button>
+
+<footer>
+  <p>Powered By - Suresh Jaat</p>
+  <p>
+    Join us on <a href="https://t.me/ssd_movies" target="_blank">Telegram</a> |
+    Follow us on <a href="https://instagram.com/ssd_movies" target="_blank">Instagram</a>
+  </p>
+  <p>© 2025 SSD Movies. All rights reserved.</p>
+</footer>
+
+<script>
+const API_KEY = "7b1804cf696cf1c310689d8b07d1e6ea";
+const BASE_URL = "https://api.themoviedb.org/3";
+const IMG_URL = "https://image.tmdb.org/t/p/w500";
+
+const genreMap = { action:28, comedy:35, romance:10749 };
+
+let currentFilter = 'now_playing';
+let currentPage = 1;
+let loading = false;
+let currentQuery = '';
+
+// Fetch Movies / Web Series
+async function fetchMovies(filter,page=1,query=''){
+  loading=true;
+  let url='';
+
+  if(query){
+    url = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=${page}`;
+  } else if(filter==='action'||filter==='comedy'||filter==='romance'){
+    url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genreMap[filter]}&sort_by=vote_average.desc&page=${page}`;
+  } else if(filter==='bollywood'){
+    url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_original_language=hi&sort_by=popularity.desc&page=${page}`;
+  } else if(filter==='hollywood'){
+    url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_original_language=en&sort_by=popularity.desc&page=${page}`;
+  } else if(filter==='south'){
+    url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_original_language=ta,te,ml,kn&sort_by=popularity.desc&page=${page}`;
+  } else if(filter==='webseries'){
+    url = `${BASE_URL}/tv/popular?api_key=${API_KEY}&language=en-US&page=${page}`;
+  } else{
+    url = `${BASE_URL}/movie/${filter}?api_key=${API_KEY}&language=en-US&page=${page}`;
+  }
+
+  try{
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+    const dataText = await res.json();
+    const results = JSON.parse(dataText.contents).results || [];
+
+    const grid = document.getElementById('movieGrid');
+    grid.innerHTML += results.map(m=>`
+      <div class="card">
+        <img src="${m.poster_path?IMG_URL+m.poster_path:'https://via.placeholder.com/500x750?text=No+Image'}" alt="${m.title||m.name}" loading="lazy"/>
+        <div class="info">
+          <h3>${m.title||m.name}</h3>
+          <p>⭐ ${m.vote_average||m.vote_average}</p>
+          <p>Release: ${m.release_date||m.first_air_date||'N/A'}</p>
+          <a href="https://t.me/ssd_movies" target="_blank">Watch on Telegram</a>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){console.error(e);}
+  loading=false;
+}
+
+// Filter buttons
+document.querySelectorAll('.filters button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    currentPage=1;
+    currentQuery='';
+    document.getElementById('movieGrid').innerHTML='';
+    fetchMovies(currentFilter,currentPage);
+  });
+});
+
+// Search
+document.getElementById('searchInput').addEventListener('keyup',(e)=>{
+  if(e.key==='Enter'){
+    currentQuery = e.target.value.trim();
+    currentPage=1;
+    document.getElementById('movieGrid').innerHTML='';
+    fetchMovies(currentFilter,currentPage,currentQuery);
+  }
+});
+
+// Load More button
+document.getElementById('loadMore').addEventListener('click',()=>{
+  if(!loading){
+    currentPage++;
+    fetchMovies(currentFilter,currentPage,currentQuery);
+  }
+});
+
+// Initial load
+fetchMovies(currentFilter,currentPage);
+</script>
+
+</body>
+</html>
